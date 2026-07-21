@@ -1,0 +1,21 @@
+langchain
+langchain-core
+langchain_ollama
+
+redis
+redisvl
+
+sentence-transformers
+transformers
+torch 
+
+numpy 
+pandas
+
+python-dotenv
+
+# Progress bars
+tqdm
+
+
+pydantic
