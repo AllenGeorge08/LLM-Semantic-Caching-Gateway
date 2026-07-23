@@ -3,9 +3,9 @@ from cache.cache import CacheService
 from cache.cache import CacheService
 
 
-def handle(request: ChatRequest):
-    cache = CacheService()
+cache = CacheService()
 
+def handle(request: ChatRequest):
     cached = cache.get_or_set(request.prompt)
     return cached 
 
