@@ -1,7 +1,8 @@
 from pydantic import BaseModel 
 
-class ChatResponse:
+class ChatResponse(BaseModel):
     response: str 
     cache_hit: bool 
     similarity_score: float | None = None 
-    latency_ms: float | None 
+    cache_latency: float 
+    llm_latency: float 

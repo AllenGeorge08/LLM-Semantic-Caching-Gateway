@@ -1,8 +1,9 @@
 from langchain_ollama import ChatOllama
+from app.config.config import LLM_MODEL
 
 # ollama run deepseek-r1 
 model = ChatOllama(
-    model="deepseek-r1",
+    model=LLM_MODEL,
     validate_model_on_init=True,
     temperature=0.8 
 )

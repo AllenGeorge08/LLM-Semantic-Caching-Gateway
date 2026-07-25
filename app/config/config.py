@@ -1,0 +1,4 @@
+TTL=3600
+DISTANCE_THRESHOLD=0.30
+LLM_MODEL="deepseek-r1:1.5b"
+EMBEDDING_MODEL="redis/langcache-embed-v1"

@@ -1,12 +1,11 @@
-from schemas.request import  ChatRequest
-from cache.cache import CacheService
-from cache.cache import CacheService
+from app.schemas.request import  ChatRequest
+from app.cache.cache import CacheService
 
 
 cache = CacheService()
 
 def handle(request: ChatRequest):
-    cached = cache.get_or_set(request.prompt)
+    cached = cache.get_or_set(request)
     return cached 
 
 

@@ -1,0 +1,119 @@
+question,expected_match,expected_hit
+I want my money back,How do I request a refund?,True
+Can I get a refund?,What is your refund policy?,True
+Refund my purchase,How do I request a refund?,True
+I need to return my order,How do I request a refund?,True
+Can you refund this?,What is your refund policy?,True
+Money refund please,How do I request a refund?,True
+How do refunds work?,What is your refund policy?,True
+Can I return this item?,What is your refund policy?,True
+I'd like a reimbursement,How do I request a refund?,True
+Refund request,How do I request a refund?,True
+
+Forgot my login password,How can I reset my password?,True
+I forgot my password.,I forgot my password.,True
+Can't log in because I forgot password,How can I reset my password?,True
+Reset my account password,How can I reset my password?,True
+Password reset help,How can I reset my password?,True
+Need to change my password,How can I reset my password?,True
+Lost my password,How can I reset my password?,True
+Forgot credentials,I forgot my password.,True
+Help me recover my password,How can I reset my password?,True
+Login password issue,I forgot my password.,True
+
+When are you open?,What are your business hours?,True
+What time do you close?,What are your business hours?,True
+Business timings?,What are your business hours?,True
+Working hours?,What are your business hours?,True
+Are you open today?,What are your business hours?,True
+
+How expensive is shipping?,How much does shipping cost?,True
+Shipping charges?,How much does shipping cost?,True
+Delivery fee?,How much does shipping cost?,True
+What's the shipping price?,How much does shipping cost?,True
+Do I pay for shipping?,How much does shipping cost?,True
+
+How long will delivery take?,How long does shipping take?,True
+When will my order arrive?,How long does shipping take?,True
+Delivery time?,How long does shipping take?,True
+Shipping duration?,How long does shipping take?,True
+Estimated delivery?,How long does shipping take?,True
+
+Can I stop my subscription?,Can I cancel my subscription?,True
+End my subscription,Can I cancel my subscription?,True
+Cancel my membership,Can I cancel my subscription?,True
+I don't want my subscription anymore,Can I cancel my subscription?,True
+Terminate subscription,Can I cancel my subscription?,True
+
+How can I pay with another card?,How do I update my payment method?,True
+Change my payment card,How do I update my payment method?,True
+Update billing information,How do I update my payment method?,True
+Replace my credit card,How do I update my payment method?,True
+Modify payment method,How do I update my payment method?,True
+
+Is there an app?,Do you have a mobile app?,True
+Do you have an Android app?,Do you have a mobile app?,True
+Mobile application available?,Do you have a mobile app?,True
+Can I use your phone app?,Do you have a mobile app?,True
+App for iPhone?,Do you have a mobile app?,True
+
+Where is your phone app?,Where can I download the mobile app?,True
+Download app,Where can I download the mobile app?,True
+Where do I install the app?,Where can I download the mobile app?,True
+App download link?,Where can I download the mobile app?,True
+Where can I get the mobile app?,Where can I download the mobile app?,True
+
+Can I change my shipping address?,Can I change my delivery address?,True
+Update delivery location,Can I change my delivery address?,True
+Wrong delivery address,Can I change my delivery address?,True
+Edit shipping address,Can I change my delivery address?,True
+Modify my delivery address,Can I change my delivery address?,True
+
+Need customer service,How do I contact customer support?,True
+How do I reach support?,How do I contact customer support?,True
+Support contact,How do I contact customer support?,True
+Customer care number?,How do I contact customer support?,True
+Talk to support agent,How do I contact customer support?,True
+
+Can I ship outside my country?,Do you offer international shipping?,True
+Do you deliver internationally?,Do you offer international shipping?,True
+Worldwide shipping?,Do you offer international shipping?,True
+Can you ship overseas?,Do you offer international shipping?,True
+International delivery available?,Do you offer international shipping?,True
+
+Track my package,How can I track my order?,True
+Where is my order?,How can I track my order?,True
+Track shipment,How can I track my order?,True
+Order tracking,How can I track my order?,True
+Package status,How can I track my order?,True
+Where's my parcel?,How can I track my order?,True
+Track delivery,How can I track my order?,True
+Order location?,How can I track my order?,True
+Shipment tracking,How can I track my order?,True
+Locate my order,How can I track my order?,True
+
+What is Kubernetes?,None,False
+Tell me about Redis,None,False
+Explain machine learning,None,False
+What's the weather today?,None,False
+Who won the World Cup?,None,False
+How do I install Ubuntu?,None,False
+Write me a Python function,None,False
+What is Docker?,None,False
+How does ChatGPT work?,None,False
+Tell me a joke,None,False
+Who is Elon Musk?,None,False
+What's 25 multiplied by 17?,None,False
+Convert USD to EUR,None,False
+Best restaurants near me,None,False
+Explain quantum computing,None,False
+How do I center a div in CSS?,None,False
+Write a SQL query,None,False
+What is an API?,None,False
+Latest AI news,None,False
+How do airplanes fly?,None,False
+Explain blockchain,None,False
+Recommend a movie,None,False
+Difference between TCP and UDP,None,False
+Capital of Japan,None,False
+Tell me about pandas dataframe,None,False
