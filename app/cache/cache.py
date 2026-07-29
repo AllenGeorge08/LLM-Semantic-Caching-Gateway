@@ -2,7 +2,6 @@ import os
 import redis
 import time 
 
-
 from sentence_transformers import SentenceTransformer 
 from redisvl.utils.vectorize import HFTextVectorizer
 from redisvl.extensions.cache.embeddings import EmbeddingsCache 
