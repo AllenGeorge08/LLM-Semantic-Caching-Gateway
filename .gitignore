@@ -3,3 +3,4 @@ reports.txt
 observations.txt
 __pycache__/
 .pytest.cache/
+.env

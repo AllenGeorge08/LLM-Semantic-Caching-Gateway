@@ -100,8 +100,10 @@ cd llm-semantic-cache-gateway
 ## 2. Create and activate a virtual environment
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 ```
+
+
 
 Linux / macOS
 
@@ -137,10 +139,25 @@ Ensure the required models are installed:
 
 ```bash
 ollama pull deepseek-r1:1.5b
-ollama pull nomic-embed-text
+ollama pull qwen3.8:latest
 ```
 
-## 6. Run the Semantic Caching Gateway
+##7. Configure the environment variables
+
+```
+cp .env.example .env
+```
+Then configure your api keys
+
+```
+GROQ_API_KEY=
+NVIDIA_API_KEY=
+HF_TOKEN=
+```
+
+Also for the embedding model we use `"redis/langcache-embed-v1"` from HuggingFace. For more details on it [Click here](https://huggingface.co/redis/langcache-embed-v1)
+
+## 8. Run the Semantic Caching Gateway
 
 ```bash
 python -m app.main

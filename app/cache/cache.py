@@ -8,9 +8,15 @@ from redisvl.extensions.cache.embeddings import EmbeddingsCache
 from redisvl.extensions.cache.llm import SemanticCache
 from app.schemas.request import  ChatRequest
 from app.schemas.response import ChatResponse
-from app.providers.deepseek_ollama import get_llm_response
 from app.metrics.evaluation import SemanticCacheEvaluator
 from app.config.config import EMBEDDING_MODEL,TTL,DISTANCE_THRESHOLD
+from app.providers.llm_providers import Router
+from dotenv import load_dotenv
+from fastapi import HTTPException
+
+load_dotenv()
+
+router = Router()
 
 encoder = SentenceTransformer("all-mpnet-base-v2")
 
@@ -46,38 +52,49 @@ cache = SemanticCache(
       ttl=TTL
 )
 
-
+supported_models = router.supported_models()
 evaluator = SemanticCacheEvaluator()
 
 class CacheService:
 
     def get_or_set(self, query: ChatRequest):
-
+        
+        model = query.llm_model
+        if model not in supported_models:
+            raise HTTPException(status_code=400,detail={"error": "unsupported_model", "model": query.llm_model, "supported": supported_models})
+               
         #Retrieving the cache..
         cache_start = time.perf_counter()
         cached = self.check(query)
         cache_latency = (time.perf_counter() - cache_start)*1000
 
         if cached:
-            return ChatResponse(
+                return ChatResponse(
                 response=cached[0]["response"],
                 cache_hit=True,
                 similarity_score=None,
                 cache_latency=cache_latency,
                 llm_latency=0.0
-            )
+        )
 
         llm_latency_start = time.perf_counter()
-        resp = get_llm_response(query.prompt)
+
+        try:
+            resp = router.invoke(query.llm_model, query.prompt)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+        except Exception as e:
+            raise HTTPException(status_code=502, detail=f"LLM call failed: {e}") from e
+
         llm_latency_final = (time.perf_counter() - llm_latency_start)*1000
         self.store(query.prompt, resp)
 
         return ChatResponse(
-            response=resp,
-            cache_hit=False,
-            similarity_score=None,
-            cache_latency=cache_latency,
-            llm_latency=llm_latency_final
+                response=resp,
+                cache_hit=False,
+                similarity_score=None,
+                cache_latency=cache_latency,
+                llm_latency=llm_latency_final
         )
 
     def check(self, query: ChatRequest):
