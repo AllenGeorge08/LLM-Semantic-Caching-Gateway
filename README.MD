@@ -201,3 +201,5 @@ A detailed comparison of different semantic similarity thresholds and their impa
 
 # ARCHITECTURE
 ![Architecture Diagram](./Diagram.png)
+
+#Latency Bencharks(./image.png)

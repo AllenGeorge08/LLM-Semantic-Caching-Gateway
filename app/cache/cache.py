@@ -44,11 +44,17 @@ vectorizer = HFTextVectorizer(
     )
 )
 
-cache = SemanticCache(
+dist_threshold = DISTANCE_THRESHOLD
+
+def set_distance_threshold(threshold: float):
+    dist_threshold = threshold
+    print(f"Distance threshold changed to {dist_threshold}")
+
+semantic_cache = SemanticCache(
       name="LLM-Gateway-Cache",
       vectorizer=vectorizer,
       redis_client=r,
-      distance_threshold=DISTANCE_THRESHOLD,
+      distance_threshold=dist_threshold,
       ttl=TTL
 )
 
@@ -56,7 +62,6 @@ supported_models = router.supported_models()
 evaluator = SemanticCacheEvaluator()
 
 class CacheService:
-
     def get_or_set(self, query: ChatRequest):
         
         model = query.llm_model
@@ -69,10 +74,13 @@ class CacheService:
         cache_latency = (time.perf_counter() - cache_start)*1000
 
         if cached:
-                return ChatResponse(
+            distance = float(cached[0]["vector_distance"])
+            similarity = 1-distance
+            
+            return ChatResponse(
                 response=cached[0]["response"],
                 cache_hit=True,
-                similarity_score=None,
+                similarity_score=similarity,
                 cache_latency=cache_latency,
                 llm_latency=0.0
         )
@@ -98,10 +106,27 @@ class CacheService:
         )
 
     def check(self, query: ChatRequest):
-        return cache.check(query.prompt)
+        return semantic_cache.check(query.prompt,return_fields=["response","vector_distance"])
 
     def store(self, prompt, response):
-        return cache.store(
+        return semantic_cache.store(
             prompt=prompt,
             response=response
         )
+
+    def delete(self):
+        return semantic_cache.clear()
+
+
+
+
+cache_service = CacheService()
+
+# class ChatRequest(BaseModel):
+#     llm_model: str
+#     prompt: str 
+#     stream: bool = False
+#     temperature: float = 0.7
+
+
+# cache.get_or_set(req)
