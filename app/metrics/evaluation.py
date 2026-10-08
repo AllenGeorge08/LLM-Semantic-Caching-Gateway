@@ -1,7 +1,7 @@
 import numpy as np
 
-class SemanticCacheEvaluator:
 
+class SemanticCacheEvaluator:
     def __init__(self):
         self.tp = 0
         self.fp = 0
@@ -10,17 +10,22 @@ class SemanticCacheEvaluator:
 
         self.total_queries = 0
         self.cache_hits = 0
-        self.cache_misses  = 0
+        self.cache_misses = 0
 
         self.cache_latencies = []
         self.llm_latencies = []
 
-
-    def record(self,actual_hit: bool ,predicted_hit :bool ,cache_latency: float,llm_latency: float =0.0):
+    def record(
+        self,
+        actual_hit: bool,
+        predicted_hit: bool,
+        cache_latency: float,
+        llm_latency: float = 0.0,
+    ):
         self.total_queries += 1
         self.cache_latencies.append(cache_latency)
 
-        if llm_latency>0:
+        if llm_latency > 0:
             self.llm_latencies.append(llm_latency)
 
         if predicted_hit:
@@ -28,60 +33,58 @@ class SemanticCacheEvaluator:
         else:
             self.cache_misses += 1
 
-
-        #Confusion matrix
+        # Confusion matrix
         if predicted_hit and actual_hit:
             self.tp += 1
         elif predicted_hit and not actual_hit:
             self.fp += 1
         elif not predicted_hit and actual_hit:
-            self.fn+=1
+            self.fn += 1
         else:
             self.tn += 1
 
-
     @property
     def cache_hit_ratio(self):
-        return self.cache_hits/self.total_queries  if self.total_queries else 0
-
+        return self.cache_hits / self.total_queries if self.total_queries else 0
 
     @property
     def cache_miss_ratio(self):
-        return self.cache_misses /self.total_queries if self.total_queries else 0
+        return self.cache_misses / self.total_queries if self.total_queries else 0
 
     @property
     def precision(self):
-        denominator = self.tp + self.fp 
-        return self.tp/denominator if denominator else 0
+        denominator = self.tp + self.fp
+        return self.tp / denominator if denominator else 0
 
     @property
     def accuracy(self):
-        return (self.tp + self.tn)/self.total_queries if self.total_queries else 0
+        return (self.tp + self.tn) / self.total_queries if self.total_queries else 0
 
     @property
     def recall(self):
-        denom = self.tp + self.fn 
-        return self.tp/denom if denom else 0
+        denom = self.tp + self.fn
+        return self.tp / denom if denom else 0
 
     @property
     def f1_score(self):
         p = self.precision
-        r = self.recall 
+        r = self.recall
 
-        if p+r==0:
+        if p + r == 0:
             return 0
 
-        return 2*p*r/(p+r)
+        return 2 * p * r / (p + r)
 
     @property
     def average_cache_latency(self):
-        if not self.cache_latencies: return 0
+        if not self.cache_latencies:
+            return 0
         return np.mean(self.cache_latencies)
-
 
     @property
     def average_llm_latency(self):
-        if not self.llm_latencies: return 0
+        if not self.llm_latencies:
+            return 0
         return np.mean(self.llm_latencies)
 
     @property
@@ -89,7 +92,7 @@ class SemanticCacheEvaluator:
         ACL = self.average_cache_latency
         ALL = self.average_llm_latency
         CHR = self.cache_hit_ratio
-        return ACL*CHR + (ALL+ACL)*(1-CHR)
+        return ACL * CHR + (ALL + ACL) * (1 - CHR)
 
     @property
     def speedup(self):
@@ -99,41 +102,37 @@ class SemanticCacheEvaluator:
             return 0
 
         WCL = self.weighted_cache_latency
-        return (ALL-WCL)/ALL
+        return (ALL - WCL) / ALL
 
-
-    def __percentile__(self,values,p):
+    def __percentile__(self, values, p):
         """Computing percentile"""
         if not values:
             return 0.0
-        return np.percentile(values,p)
-
+        return np.percentile(values, p)
 
     @property
     def p50_cache_latency(self):
-        return self.__percentile__(self.cache_latencies,50)
+        return self.__percentile__(self.cache_latencies, 50)
 
-    
     @property
     def p95_cache_latency(self):
-            return self.__percentile__(self.cache_latencies, 95)
+        return self.__percentile__(self.cache_latencies, 95)
 
     @property
     def p99_cache_latency(self):
-        return self.__percentile__(self.cache_latencies,99)
+        return self.__percentile__(self.cache_latencies, 99)
 
     @property
     def p50_llm_latency(self):
-        return self.__percentile__(self.llm_latencies,50)
+        return self.__percentile__(self.llm_latencies, 50)
 
     @property
     def p95_llm_latency(self):
-        return self.__percentile__(self.llm_latencies,95)
+        return self.__percentile__(self.llm_latencies, 95)
 
     @property
     def p99_llm_latency(self):
-        return self.__percentile__(self.llm_latencies,99)
-
+        return self.__percentile__(self.llm_latencies, 99)
 
     def report(self):
 
@@ -154,21 +153,13 @@ class SemanticCacheEvaluator:
 
         print()
 
-        print(
-            f"Average Cache Latency : {self.average_cache_latency*1000:.2f} ms"
-        )
+        print(f"Average Cache Latency : {self.average_cache_latency * 1000:.2f} ms")
 
-        print(
-            f"Average LLM Latency   : {self.average_llm_latency:.3f} s"
-        )
+        print(f"Average LLM Latency   : {self.average_llm_latency:.3f} s")
 
-        print(
-            f"Weighted Cache Latency: {self.weighted_cache_latency:.3f} s"
-        )
+        print(f"Weighted Cache Latency: {self.weighted_cache_latency:.3f} s")
 
-        print(
-            f"Speedup               : {self.speedup:.2%}"
-        )
+        print(f"Speedup               : {self.speedup:.2%}")
 
         print()
 
@@ -185,10 +176,10 @@ class SemanticCacheEvaluator:
         print("\nLatency Metrics")
         print("-" * 40)
 
-        print(f"Average Cache Latency : {self.average_cache_latency*1000:.2f} ms")
-        print(f"P50 Cache Latency     : {self.p50_cache_latency*1000:.2f} ms")
-        print(f"P95 Cache Latency     : {self.p95_cache_latency*1000:.2f} ms")
-        print(f"P99 Cache Latency     : {self.p99_cache_latency*1000:.2f} ms")
+        print(f"Average Cache Latency : {self.average_cache_latency * 1000:.2f} ms")
+        print(f"P50 Cache Latency     : {self.p50_cache_latency * 1000:.2f} ms")
+        print(f"P95 Cache Latency     : {self.p95_cache_latency * 1000:.2f} ms")
+        print(f"P99 Cache Latency     : {self.p99_cache_latency * 1000:.2f} ms")
 
         print()
 
@@ -202,7 +193,5 @@ class SemanticCacheEvaluator:
         print(f"Weighted Cache Latency: {self.weighted_cache_latency:.3f} s")
         print(f"Speedup               : {self.speedup:.2%}")
 
-
         print(f"Cache Hit Ratio  : {self.cache_hit_ratio:.2%}")
         print(f"Cache Miss Ratio : {self.cache_miss_ratio:.2%}")
-    

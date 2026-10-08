@@ -7,5 +7,13 @@ services:
     volumes:
       - redis_storage:/data
 
+  app:
+      build: .
+      ports:
+      - "8000:8000"
+      env_file: .env 
+      environment:
+        REDIS_URL: redis://redis:6379
+  
 volumes:
   redis_storage:

@@ -4,7 +4,7 @@ from app.cache.cache import cache_service, semantic_cache, router
 from app.schemas.request import ChatRequest
 from app.providers.llm_providers import available_models
 
-MODELS=[]
+MODELS = []
 for model in available_models:
     MODELS.append(model)
 
@@ -40,61 +40,61 @@ QUERY_GROUPS = [
 ]
 
 
-def run_baseline(model:str):
-    latencies =[]
+def run_baseline(model: str):
+    latencies = []
     for group in QUERY_GROUPS:
         for prompt in group:
             time_start = time.perf_counter()
-            _ = router.invoke(model,prompt)
-            latencies.append((time.perf_counter()-time_start)*1000)
-    
+            _ = router.invoke(model, prompt)
+            latencies.append((time.perf_counter() - time_start) * 1000)
+
     return {
-            "model": model,
-            "mean_ms": np.mean(latencies),
-            "p50_ms": np.median(latencies),
-            "p90_ms": np.percentile(latencies,90),
-            "p95_ms": np.percentile(latencies,95)
+        "model": model,
+        "mean_ms": np.mean(latencies),
+        "p50_ms": np.median(latencies),
+        "p90_ms": np.percentile(latencies, 90),
+        "p95_ms": np.percentile(latencies, 95),
     }
 
 
-def run_cache(model:str):
+def run_cache(model: str):
     cache_latencies = []
     for group in QUERY_GROUPS:
         for prompt in group:
-            req = ChatRequest(llm_model=model,prompt=prompt)
+            req = ChatRequest(llm_model=model, prompt=prompt)
             time_start = time.perf_counter()
             _ = cache_service.get_or_set(req)
-            cache_latencies.append((time.perf_counter()-time_start)*1000)
+            cache_latencies.append((time.perf_counter() - time_start) * 1000)
     return {
-            "model": model,
-            "mean_ms": np.mean(cache_latencies),
-            "p50_ms": np.median(cache_latencies),
-            "p90_ms": np.percentile(cache_latencies,90),
-            "p95_ms": np.percentile(cache_latencies,95)
-        }
+        "model": model,
+        "mean_ms": np.mean(cache_latencies),
+        "p50_ms": np.median(cache_latencies),
+        "p90_ms": np.percentile(cache_latencies, 90),
+        "p95_ms": np.percentile(cache_latencies, 95),
+    }
 
 
 def main():
     print("Running baseline checks..")
     cache_service.delete()
     baseline_responses = {}
-    for model in MODELS: 
+    for model in MODELS:
         res = run_baseline(model)
-        baseline_responses[model] = res 
-        print(f"{model:12s} mean_ms: {res['mean_ms']}, p50_ms: {res['p50_ms']}, p90_ms: {res['p90_ms']}, p95_ms: {res['p95_ms']}")
+        baseline_responses[model] = res
+        print(
+            f"{model:12s} mean_ms: {res['mean_ms']}, p50_ms: {res['p50_ms']}, p90_ms: {res['p90_ms']}, p95_ms: {res['p95_ms']}"
+        )
 
     cache_service.delete()
     cached_responses = {}
     print("Cached latencies...")
-    for model in MODELS: 
+    for model in MODELS:
         res = run_cache(model)
-        cached_responses[model] = res 
-        print(f"{model:12s} mean_ms: {res['mean_ms']}, p50_ms: {res['p50_ms']}, p90_ms: {res['p90_ms']}, p95_ms: {res['p95_ms']}")
+        cached_responses[model] = res
+        print(
+            f"{model:12s} mean_ms: {res['mean_ms']}, p50_ms: {res['p50_ms']}, p90_ms: {res['p90_ms']}, p95_ms: {res['p95_ms']}"
+        )
 
 
 if __name__ == "__main__":
     main()
-
-
-
-

@@ -198,7 +198,6 @@ The benchmark automatically:
 A detailed comparison of different semantic similarity thresholds and their impact on cache performance is provided in **`BENCHMARKS.MD`**.
 
 
-
 # ARCHITECTURE
 ![Architecture Diagram](./Diagram.png)
 
