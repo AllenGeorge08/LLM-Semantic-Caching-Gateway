@@ -14,5 +14,5 @@ def test_fastapi_route():
         "/api/v1/chat/completions",
         json=request.model_dump(),  # to generate a dictionary repr of the model
     )
-    # print(response.json())
+    print(response.status_code, response.json())
     assert response.status_code == 200
