@@ -10,7 +10,7 @@ Evaluation of the semantic cache across four distance thresholds (0.30, 0.50, 0.
 
 - Run
 ```python
-python -m app.benchmark_evaluation.benchmark
+make evaluate
 ```
 
 | Item | Value |

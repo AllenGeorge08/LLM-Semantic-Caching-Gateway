@@ -1,204 +1,233 @@
 # LLM Semantic Caching Gateway
 
-An **LLM Semantic Caching Gateway** is a middleware layer that sits between client applications and Large Language Models (LLMs) to reduce response latency, lower inference costs, and improve throughput by intelligently reusing previously generated responses.
+![CI](https://github.com/AllenGeorge08/LLM-Semantic-Caching-Gateway/actions/workflows/ci.yml/badge.svg?branch=master)
 
-Unlike traditional key-value caches that require exact string matches, this gateway performs **semantic similarity search** on incoming queries using vector embeddings. If a new query is sufficiently similar to a previously answered query, the cached response is returned immediately, eliminating the need for another expensive LLM inference. Otherwise, the request is forwarded to the LLM, and the newly generated response is stored in the semantic cache for future reuse.
+A drop-in gateway that sits between your application and your LLM providers and **answers repeated questions from a semantic cache instead of paying for another inference call**.
 
-This project demonstrates how semantic caching can significantly improve the performance of LLM-powered applications while maintaining high answer quality. The gateway is designed to be modular and provider-agnostic, making it easy to integrate with different embedding models, vector databases, and LLM providers.
+LLM-backed products see the same questions over and over, phrased differently: *"What is Redis?"*, *"Explain Redis to me"*, *"what's redis used for"*. A normal key-value cache treats each of those as a miss, so every one of them costs money and takes seconds. This gateway embeds each incoming prompt, searches a vector index of previously answered prompts, and returns the stored answer when a close-enough match exists. Only genuinely new questions reach the model, and their answers are stored for next time.
+
+The result is lower latency, lower cost, and higher throughput, with the similarity threshold as an explicit, measurable knob for trading hit rate against answer correctness. This repository includes the evaluation harness used to measure that trade-off, not just the cache.
+
+## Results at a glance
+
+<!-- Fill these in from LATENCY_BENCHMARKS.MD and THRESHOLD_BENCHMARKS.MD -->
+
+| Metric | Value |
+| --- | --- |
+| Median latency, cache hit vs. direct LLM call | `X ms` vs. `Y ms` |
+| Overhead added on a cache miss (embedding + lookup) | `Z ms` |
+| Recommended similarity threshold | `T` |
+| Precision / recall at that threshold | `P%` / `R%` |
+
+Full methodology and numbers: [`LATENCY_BENCHMARKS.MD`](./LATENCY_BENCHMARKS.MD) and [`THRESHOLD_BENCHMARKS.MD`](./THRESHOLD_BENCHMARKS.MD).
 
 ## Features
 
-* Semantic similarity-based caching using vector embeddings
-* Redis Stack + RedisVL powered vector search
-* FastAPI gateway for handling chat requests
-* Automatic cache population on cache misses
-* Configurable semantic similarity thresholds
-* Performance evaluation framework
-* Latency, accuracy, precision, recall, F1-score and cache hit ratio metrics
-* Modular architecture supporting different embedding models and LLM providers
+* Semantic similarity caching on top of **Redis Stack** and **RedisVL** vector search
+* **FastAPI** gateway with a single chat-completions endpoint
+* **Five LLMs behind one interface**, selectable per request
+* Automatic cache population on misses
+* Configurable similarity threshold, benchmarked at 0.3, 0.5, 0.75 and 0.9
+* Evaluation framework: hit/miss ratio, precision, recall, accuracy, F1, confusion matrix, P50/P95/P99 latency, speedup over baseline
+* Dockerized: the whole stack starts with one command
+* Automated tests with GitHub Actions CI
 
-## Tech Stack
+## Supported models
 
-* **Python 3**
-* **FastAPI** – REST API gateway
-* **Redis Stack** – Vector database and cache storage
-* **RedisVL** – Semantic caching and vector search
-* **Ollama** – Local LLM inference
-* **DeepSeek-R1:1.5B** – Response generation
-* **Nomic Embed Text** – Embedding model
-* **Sentence Transformers** – Embedding support
-* **Docker Compose** – Redis deployment
+Pass one of these as `llm_model` in the request body.
 
-## How It Works
+| `llm_model` | Provider |
+| --- | --- |
+| `deepseek-flash-v4` | OpenRouter |
+| `gemini_2.5_flash` | OpenRouter |
+| `claude_haiku_4.5` | OpenRouter |
+| `gpt_luna_pro` | OpenRouter |
+| `gpt-oss-120b` | Groq |
 
-1. A client sends a prompt to the FastAPI gateway.
-2. The query is converted into a dense vector embedding.
-3. RedisVL performs a semantic similarity search against previously cached queries.
-4. If the similarity score exceeds the configured threshold, the cached response is returned immediately (**Cache Hit**).
-5. Otherwise, the request is forwarded to the LLM (**Cache Miss**).
-6. The generated response is stored back in the semantic cache for future requests.
+## Tech stack
 
-This workflow reduces redundant LLM invocations while preserving response quality through semantic matching instead of exact string matching.
+* **Python 3.12**, **FastAPI**, **Pydantic**
+* **Redis Stack** and **RedisVL** for vector search and cache storage
+* **Sentence Transformers** with `redis/langcache-embed-v1` (Hugging Face) for embeddings
+* **LangChain** provider integrations (`langchain-openrouter`, `langchain-groq`)
+* **Docker Compose** for deployment
+* **pytest** and **GitHub Actions** for testing and CI
 
-## Evaluation
+## How it works
 
-The semantic cache was evaluated using a benchmark dataset consisting of repeated, paraphrased, and semantically similar queries. Multiple semantic similarity thresholds were tested to analyze the trade-offs between cache hit ratio, precision, recall, latency reduction, and overall cache effectiveness.
+1. A client sends a prompt to the gateway.
+2. The prompt is converted to a dense vector embedding.
+3. RedisVL searches the index of previously cached prompts for the nearest neighbor.
+4. If the distance is within the configured threshold, the stored response is returned immediately (**cache hit**).
+5. Otherwise the request is routed to the selected LLM (**cache miss**).
+6. The new response is written to the cache for future requests.
 
-The evaluation reports include metrics such as:
+## Architecture
 
-* Cache Hit Ratio
-* Cache Miss Ratio
-* Precision
-* Recall
-* Accuracy
-* F1 Score
-* Confusion Matrix
-* Average Cache Latency
-* Average LLM Latency
-* P50 / P95 / P99 Latencies
-* Overall Speedup
+![Architecture Diagram](./Diagram.png)
 
-A detailed comparison of the results obtained across different semantic similarity thresholds is available in **`BENCHMARKS.MD`**.
+## Project structure
 
-
-## Project Structure
-
-| Folder / File                                     | Description                                                                                                                                                           |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/`                                            | Contains the complete source code for the semantic caching gateway, API, cache implementation, benchmarking framework, and evaluation utilities.                      |
-| `app/api/`                                        | FastAPI routes that expose the semantic cache gateway endpoints to client applications.                                                                               |
-| `app/benchmark_evaluation/`                       | Contains the benchmarking pipeline, benchmark datasets, and scripts used to evaluate semantic cache performance.                                                      |
-| `app/benchmark_evaluation/benchmark.py`           | Executes the benchmark dataset and computes cache performance metrics.                                                                                                |
-| `app/benchmark_evaluation/evaluation_dataset.csv` | Benchmark queries with expected cache behavior used for evaluating the semantic cache.                                                                                |
-| `app/benchmark_evaluation/faq_dataset.csv`        | Sample FAQ dataset used to populate and test the semantic cache.                                                                                                      |
-| `app/cache/`                                      | Core semantic cache implementation using RedisVL and vector similarity search. Responsible for cache lookups, insertions, and semantic matching.                      |
-| `app/config/`                                     | Stores application configuration, environment variables, and shared settings.                                                                                         |
-| `app/gateway/`                                    | Gateway logic responsible for deciding whether to return a cached response or forward the request to the LLM.                                                         |
-| `app/metrics/`                                    | Implements the evaluation framework used to calculate cache hit ratio, precision, recall, F1-score, latency metrics, confusion matrix, and overall cache performance. |
-| `app/providers/`                                  | Contains LLM provider implementations. Currently integrates DeepSeek-R1 running locally through Ollama.                                                               |
-| `app/schemas/`                                    | Pydantic request and response models used by the FastAPI application.                                                                                                 |
-| `app/tests/`                                      | Unit tests covering the cache layer, gateway logic, and API request handling.                                                                                         |
-| `app/utils/`                                      | Utility modules and helper functions shared across the project.                                                                                                       |
-| `app/main.py`                                     | Entry point of the FastAPI application that initializes the semantic caching gateway.                                                                                 |
-| `docker-compose.yml`                              | Starts the Redis Stack instance required for semantic vector search and caching.                                                                                      |
-| `README.md`                                       | Project documentation, architecture overview, setup instructions, and usage guide.                                                                                    |
-| `BENCHMARKS.MD`                                   | Detailed benchmark results across multiple semantic similarity thresholds, including latency analysis and cache performance comparisons.                              |
-| `requirements.txt`                                | Python dependencies required to run the project.                                                                                                                      |
-| `venv/`                                           | Local Python virtual environment (not required after cloning the repository).                                                                                         |
-
----
-
-# Running the Project
-
-## 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd llm-semantic-cache-gateway
+```
+.
+├── .github/workflows/ci.yml     # CI: tests against a Redis service container
+├── app/
+│   ├── api/                     # FastAPI routes
+│   ├── benchmark_evaluation/
+│   │   ├── benchmark.py
+│   │   ├── evaluation_dataset.csv
+│   │   └── faq_dataset.csv
+│   ├── cache/                   # Semantic cache (RedisVL)
+│   ├── config/                  # Settings and model names
+│   ├── gateway/                 # Hit-or-forward decision logic
+│   ├── metrics/                 # Evaluation metrics
+│   ├── providers/               # LLM providers and model router
+│   ├── schemas/                 # Pydantic request/response models
+│   ├── utils/                   # Shared helpers
+│   └── main.py                  # Application entry point
+├── tests/
+│   ├── test_cache.py
+│   ├── test_chat_request.py
+│   └── test_gateway.py
+├── Diagram.png
+├── Dockerfile
+├── docker-compose.yml
+├── image.png
+├── LATENCY_BENCHMARKS.MD
+├── Makefile
+├── observations.txt
+├── pytest.ini
+├── README.MD
+├── requirements.txt
+└── THRESHOLD_BENCHMARKS.MD
 ```
 
-## 2. Create and activate a virtual environment
+### What each part does
+
+| Path | Purpose |
+| --- | --- |
+| `app/api/` | FastAPI routes that expose the gateway to clients. |
+| `app/cache/` | The semantic cache: embedding, vector lookup, insertion, and threshold matching on RedisVL. |
+| `app/gateway/` | Decides whether to serve a cached response or forward to an LLM, then writes new answers back. |
+| `app/providers/` | Provider clients and the `Router` that maps `llm_model` names to OpenRouter and Groq models. |
+| `app/schemas/` | Request and response models shared across the API. |
+| `app/config/` | Configuration and model identifiers. |
+| `app/metrics/` | Computes hit ratio, precision, recall, F1, confusion matrix, and latency percentiles. |
+| `app/benchmark_evaluation/` | Benchmark runner and datasets used to evaluate cache quality across thresholds. |
+| `app/utils/` | Small helpers used across modules. |
+| `app/main.py` | Initializes the FastAPI app. |
+| `tests/` | Tests for the cache layer, gateway logic, and API route. |
+| `.github/workflows/ci.yml` | Runs the test suite on every push and pull request. |
+| `THRESHOLD_BENCHMARKS.MD` | Cache quality at similarity thresholds 0.3, 0.5, 0.75 and 0.9. |
+| `LATENCY_BENCHMARKS.MD` | Our cache vs. baseline (direct LLM) latency comparison. |
+| `observations.txt` | Working notes from experiments. |
+| `Dockerfile`, `docker-compose.yml` | Container image for the gateway and the Redis Stack service. |
+| `Makefile` | Shortcuts: `make run`, `make test`, `make evaluate`. |
+| `pytest.ini` | Test discovery and import-path configuration. |
+| `Diagram.png`, `image.png` | Architecture diagram and latency chart. |
+
+## Getting started
+
+### Prerequisites
+
+* Docker and Docker Compose
+* Python 3.12 (only for running without Docker)
+* API keys for **OpenRouter**, **Groq**, and **Hugging Face** (see below)
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/AllenGeorge08/LLM-Semantic-Caching-Gateway.git
+cd LLM-Semantic-Caching-Gateway
+```
+
+### 2. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Then fill in your keys:
+
+```
+OPENROUTER_API_KEY=   # DeepSeek, Gemini, Claude Haiku and GPT Luna Pro (via OpenRouter)
+GROQ_API_KEY=         # gpt-oss-120b (via Groq)
+HF_TOKEN=             # downloads the sentence-transformers embedding model from Hugging Face
+```
+
+The embedding model is [`redis/langcache-embed-v1`](https://huggingface.co/redis/langcache-embed-v1).
+
+### 3. Run it
+
+**With Docker (recommended):** starts Redis Stack and the gateway together.
+
+```bash
+docker compose up --build
+```
+
+**Without Docker for the app:** start Redis, then run the gateway locally.
 
 ```bash
 python3 -m venv venv
-```
-
-
-
-Linux / macOS
-
-```bash
-source venv/bin/activate
-```
-
-Windows
-
-```powershell
-venv\Scripts\activate
-```
-
-## 3. Install dependencies
-
-```bash
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+docker compose up -d redis        # Redis Stack only
+make run
 ```
 
-## 4. Start Redis Stack
+The API is available at `http://localhost:8000`, with interactive Swagger docs at `http://localhost:8000/docs`.
+
+### 4. Try it
 
 ```bash
-docker compose up -d
+curl -X POST http://localhost:8000/api/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"llm_model": "gpt-oss-120b", "prompt": "What is a database and why is it used?"}'
 ```
 
-## 5. Start the Ollama server
+Example response:
+
+```json
+{
+  "response": "...",
+  "cache_hit": false,
+  "similarity_score": null,
+  "cache_latency": 73.1,
+  "llm_latency": 2669.2
+}
+```
+
+Send a rephrased version of the same question (*"Why do we use databases?"*) and `cache_hit` becomes `true`, with the LLM latency gone.
+
+## Testing
 
 ```bash
-ollama serve
+make test
 ```
 
-Ensure the required models are installed:
+Tests run against a live Redis instance. CI (GitHub Actions) starts one as a service container.
+
+## Benchmarks
 
 ```bash
-ollama pull deepseek-r1:1.5b
-ollama pull qwen3.8:latest
+make evaluate
 ```
 
-##7. Configure the environment variables
+The evaluation runs a labeled set of repeated, paraphrased, and unrelated queries and reports:
 
-```
-cp .env.example .env
-```
-Then configure your api keys
+* Cache hit and miss ratio
+* Precision, recall, accuracy, and F1
+* Confusion matrix
+* Average cache latency vs. average LLM latency
+* P50 / P95 / P99 latency
+* Overall speedup
 
-```
-GROQ_API_KEY=
-NVIDIA_API_KEY=
-HF_TOKEN=
-```
+Two reports are included:
 
-Also for the embedding model we use `"redis/langcache-embed-v1"` from HuggingFace. For more details on it [Click here](https://huggingface.co/redis/langcache-embed-v1)
+* **[`THRESHOLD_BENCHMARKS.MD`](./THRESHOLD_BENCHMARKS.MD)**: how hit rate, precision, and recall change at thresholds 0.3, 0.5, 0.75 and 0.9. A looser threshold serves more requests from cache but risks returning an answer to a different question; a stricter one is safer but saves less.
+* **[`LATENCY_BENCHMARKS.MD`](./LATENCY_BENCHMARKS.MD)**: our cache vs. the baseline (direct LLM call), per model.
 
-## 8. Run the Semantic Caching Gateway
+### Latency comparison
 
-```bash
-python -m app.main
-```
-
-The API will be available at:
-
-```
-http://localhost:8000
-```
-
-Swagger documentation:
-
-```
-http://localhost:8000/docs
-```
-
----
-
-# Running the Benchmark Evaluation
-
-After the gateway is running, execute the benchmark suite:
-
-```bash
-python -m app.benchmark_evaluation.benchmark
-```
-
-The benchmark automatically:
-
-* Loads the benchmark dataset
-* Executes semantic cache lookups
-* Measures cache hits and misses
-* Computes precision, recall, accuracy, and F1-score
-* Calculates cache latency and LLM latency
-* Generates confusion matrix statistics
-* Reports cache speedup over direct LLM inference
-
-A detailed comparison of different semantic similarity thresholds and their impact on cache performance is provided in **`BENCHMARKS.MD`**.
-
-
-# ARCHITECTURE
-![Architecture Diagram](./Diagram.png)
-
-#Latency Bencharks(./image.png)
+![Latency Benchmarks](./image.png)
