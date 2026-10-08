@@ -1,18 +1,21 @@
 from app.cache.cache import CacheService
 from app.schemas.request import ChatRequest
-from app.api.chat import chat_with_llm
 from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
 
 def test_fastapi_route():
-    response = client.post(
-        "/api/v1/chat/completions",
-        json={
-            "prompt": "What is a database and why is it used"
-        }
+    request = ChatRequest(
+        llm_model="gpt-oss-120b",
+        prompt= "What is a database and why is it used"
     )
 
+    response = client.post(
+        "/api/v1/chat/completions",
+        json=request.model_dump() #to generate a dictionary repr of the model
+    )
+    # print(response.json())
     assert response.status_code == 200
+
    

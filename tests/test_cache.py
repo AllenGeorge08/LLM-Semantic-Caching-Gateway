@@ -1,8 +1,10 @@
 from app.cache.cache import CacheService
 from app.schemas.request import ChatRequest
 
-
 cache = CacheService()
+
+model = "gpt_luna_pro"
+
 
 def test_cache_hit():
     cache.store(
@@ -11,6 +13,7 @@ def test_cache_hit():
     )
 
     request = ChatRequest(
+        llm_model=model,
         prompt = "What is redis"
     )
 
@@ -19,8 +22,10 @@ def test_cache_hit():
     assert result is not None
 
 
+
 def test_cache_miss():
     request = ChatRequest(
+        llm_model=model,
         prompt="What is an school and what do we do there"
     )
 
@@ -36,6 +41,7 @@ def test_score_and_check():
         )
     
     request = ChatRequest(
+            llm_model=model,
             prompt = "What's redis"
         )
     
