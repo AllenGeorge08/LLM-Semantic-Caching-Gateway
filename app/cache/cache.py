@@ -122,11 +122,3 @@ class CacheService:
 
 cache_service = CacheService()
 
-# class ChatRequest(BaseModel):
-#     llm_model: str
-#     prompt: str 
-#     stream: bool = False
-#     temperature: float = 0.7
-
-
-# cache.get_or_set(req)

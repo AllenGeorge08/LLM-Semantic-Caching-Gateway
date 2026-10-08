@@ -1,37 +1,77 @@
 # Semantic Cache Threshold Comparison
 
-Evaluation run against 105 queries across three similarity thresholds (0.30, 0.50, 0.75).
+Evaluation of the semantic cache across four distance thresholds (0.30, 0.50, 0.75, 0.90) on 105 labeled queries, with `gpt_luna_pro` as the backing LLM.
 
-## Summary Table
+## Setup
 
-| Metric | Threshold 0.30 | Threshold 0.50 | Threshold 0.75 |
-|---|---|---|---|
-| Queries | 105 | 105 | 105 |
-| Cache Hits / Misses | 104 / 1 | 97 / 8 | 105 / 0 |
-| Cache Hit Ratio | 99.05% | 92.38% | 100.00% |
-| Precision | 76.92% | **82.47%** | 76.19% |
-| Recall | 100.00% | 100.00% | 100.00% |
-| Accuracy | 77.14% | **83.81%** | 76.19% |
-| F1 Score | 86.96% | **90.40%** | 86.49% |
-| TP | 80 | 80 | 80 |
-| FP | 24 | 17 | 25 |
-| FN | 0 | 0 | 0 |
-| TN | 1 | 8 | 0 |
-| Avg Cache Latency | 6556.55 ms | 85294.48 ms | 6000.55 ms |
-| P50 Cache Latency | 6259.38 ms | 84344.14 ms | 5900.74 ms |
-| P95 Cache Latency | 8587.22 ms | 105302.73 ms | 6957.06 ms |
-| P99 Cache Latency | 11040.03 ms | 133942.52 ms | 10099.08 ms |
-| Avg LLM Latency | 25371.532 s | 18796.219 s | 0.000 s |
-| Weighted Cache Latency | 248.190 s | 1517.387 s | 6.001 s |
-| Speedup | 99.02% | 91.93% | **0.00%** |
+#### How to Reproduce
+
+- Tune the `DISTANCE_THRESHOLD` from `app/config/config.py`
+
+- Run
+```python
+python -m app.benchmark_evaluation.benchmark
+```
+
+| Item | Value |
+|---|---|
+| Queries | 105 (80 expected hits: paraphrases of cached queries; 25 expected misses: near-miss and unrelated queries) |
+| Cache | RedisVL semantic cache, cosine distance |
+| Threshold meaning | `distance_threshold`: a cached entry is returned if its cosine distance to the query is within the threshold. **Lower is stricter.** |
+| Backing LLM | gpt_luna_pro (via OpenRouter) |
+| Positive class | "should be served from cache" |
+
+Definitions:
+
+- **TP**: expected hit, served from cache (correct hit)
+- **FP**: expected miss, served from cache (wrong answer returned)
+- **FN**: expected hit, sent to the LLM (missed saving)
+- **TN**: expected miss, sent to the LLM (correct miss)
+- **False-hit rate**: FP / (FP + TN), the share of queries that should miss but are served a cached answer
+- **Balanced accuracy**: mean of recall and true-negative rate, which is robust to the 80/25 class imbalance
+
+## Results
+
+| Metric | 0.30 | 0.50 | 0.75 | 0.90 |
+|---|---:|---:|---:|---:|
+| Queries | 105 | 105 | 105 | 105 |
+| Cache hits / misses | 62 / 43 | 105 / 0 | 105 / 0 | 105 / 0 |
+| Cache hit ratio | 59.05% | 100.00% | 100.00% | 100.00% |
+| Precision | **95.16%** | 76.19% | 76.19% | 76.19% |
+| Recall | 73.75% | **100.00%** | **100.00%** | **100.00%** |
+| **False-hit rate** | **12.00%** | 100.00% | 100.00% | 100.00% |
+| Accuracy | 77.14% | 76.19% | 76.19% | 76.19% |
+| Balanced accuracy | **80.88%** | 50.00% | 50.00% | 50.00% |
+| F1 score | 83.10% | 86.49% | 86.49% | 86.49% |
+| TP | 59 | 80 | 80 | 80 |
+| FP | 3 | 25 | 25 | 25 |
+| FN | 21 | 0 | 0 | 0 |
+| TN | 22 | 0 | 0 | 0 |
 
 ## Observations
 
-- **0.50 is the best-performing threshold overall.** It has the highest precision, accuracy, and F1 score, and is the only threshold that produces any true negatives (8), meaning it's the only one actually distinguishing genuinely dissimilar queries.
-- **0.30 and 0.75 both over-match.** Recall is 100% at every threshold (no false negatives), but false positive counts of 24 and 25 respectively indicate roughly a quarter of "cache hits" at these thresholds are incorrect matches being served instead of hitting the LLM.
-- **0.75's 0.00% speedup is misleading, not a win.** With zero cache misses and zero true negatives, the cache never correctly identified a dissimilar query — every query was served from cache regardless of correctness. This threshold is too loose to be useful for correctness, even though hit ratio looks perfect on paper.
-- **The 85s average cache latency at 0.50 is an outlier** relative to 0.30 and 0.75 (roughly 13x higher) and should be investigated — possible causes include a cold cache/embedding model reload, GC pause, or a resource contention issue during that run, rather than an inherent property of the threshold itself.
+- **Only 0.30 discriminates.** At 0.50, 0.75 and 0.90 every one of the 105 queries is served from cache, so the results are identical. These thresholds are too loose for this embedding model: all 25 near-miss queries sit within 0.50 distance of a cached entry.
+- **At 0.30, 3 of 25 near-miss queries (12%) receive a wrong cached answer**, versus 100% at the looser thresholds. Precision is 95.16%.
+- **0.30 gives up recall to get there.** 59 of 80 paraphrases hit (73.75%), and 21 are sent to the LLM unnecessarily. A miss costs an LLM call, while a false hit returns a wrong answer, so this is the safer side of the tradeoff.
+- **Accuracy and F1 are not the deciding metrics here.** With 80 positives and 25 negatives, serving everything from cache already scores 76.19% accuracy and 86.49% F1, which is why the loose thresholds look competitive on those two. Balanced accuracy (80.88% vs 50.00%) and false-hit rate show the real difference.
+- **There is an ambiguous band between 0.30 and 0.50.** It contains 43 queries: 21 that should hit and 22 that should miss. Raising the threshold within this band recovers paraphrases at roughly the same rate it admits wrong hits, which suggests the distance score alone cannot separate these cases cleanly.
 
-## Recommendation
+## Latency
 
-Use **threshold = 0.50** as the default operating point — it's the only configuration in this comparison that balances hit ratio with actual correctness (precision/accuracy/F1), rather than trading correctness away for a higher hit rate.
+Latency figures from this evaluation run are not reported as cache-hit latency. The per-query timings in this harness (about 5-6 s at thresholds of 0.50 and above, and about 144 s on average at 0.30) are far above the lookup latency measured in isolation, and they do not isolate the embedding and vector-search path. The weighted-latency and speedup values this script printed are also omitted, because they combine milliseconds and seconds in one formula.
+
+LLM latency on the miss path at 0.30 (43 misses), which the script printed with an "s" label but whose values are milliseconds:
+
+| Metric | Value |
+|---|---:|
+| Average LLM latency | 7,094.8 ms |
+| P50 LLM latency | 6,574.2 ms |
+| P95 LLM latency | 13,638.2 ms |
+| P99 LLM latency | 15,945.1 ms |
+
+Cache vs. LLM latency across models is reported separately in the latency benchmark, with lookup timed on its own.
+
+## Conclusion
+
+Of the thresholds tested, **0.30 is the only usable operating point**: 95.16% precision and a 12% false-hit rate, at the cost of 73.75% recall. It is not yet tuned. Thresholds of 0.50 and above should not be used with this embedding model on this query set.
+

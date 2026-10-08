@@ -1,6 +1,7 @@
 import pandas as pd
 from app.cache.cache import CacheService,ChatRequest
 from app.metrics.evaluation import SemanticCacheEvaluator
+from app.config.config import DISTANCE_THRESHOLD,OPENAI_GPT_LUNA_PRO
 
 faq_df = pd.read_csv("app/benchmark_evaluation/faq_dataset.csv")
 
@@ -21,6 +22,7 @@ evaluator = SemanticCacheEvaluator()
 for _,row in test_df.iterrows():
     response = cache.get_or_set(
         ChatRequest(
+            llm_model="gpt_luna_pro",
             prompt=row["question"]
         )
     )
@@ -32,7 +34,8 @@ for _,row in test_df.iterrows():
         llm_latency=response.llm_latency
     )
 
-
+print(f"Model being used : {"gpt_luna_pro"}")
+print(f"Evaluation at distance threshold : {DISTANCE_THRESHOLD}")
 print(evaluator.report())
 
 
