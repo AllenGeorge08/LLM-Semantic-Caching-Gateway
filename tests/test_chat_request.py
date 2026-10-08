@@ -7,7 +7,7 @@ client = TestClient(app)
 
 def test_fastapi_route():
     request = ChatRequest(
-        llm_model="gpt-oss-120b", prompt="What is a database and why is it used"
+        llm_model="gpt-oss-120b", prompt="Teach me pythagoras theorem with an example"
     )
 
     response = client.post(
