@@ -64,7 +64,54 @@ Pass one of these as `llm_model` in the request body.
 
 ## Architecture
 
-![Architecture Diagram](./Diagram.png)
+```mermaid
+%%{init: {'theme': 'dark', 'themeVariables': { 'fontFamily': 'Architects Daughter, Virgil, Comic Sans MS, sans-serif'}}}%%
+flowchart LR
+    classDef client fill:#1e293b,stroke:#475569,color:#e2e8f0,stroke-width:2px,rx:6px,ry:6px;
+    classDef router fill:#0f172a,stroke:#38bdf8,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+    classDef cache fill:#0f172a,stroke:#a855f7,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+    classDef redisSearch fill:#0f172a,stroke:#ef4444,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+    classDef decision fill:#172554,stroke:#60a5fa,color:#f8fafc,stroke-width:2px;
+    classDef hitBranch fill:#064e3b,stroke:#34d399,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+    classDef missBranch fill:#450a0a,stroke:#f87171,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+    classDef redisStore fill:#0f172a,stroke:#dc2626,color:#f8fafc,stroke-width:2px,rx:8px,ry:8px;
+
+    Client["👤 CLIENT"]:::client
+    Router["🔀 ROUTER"]:::router
+    SemanticCache["🧠 SEMANTIC CACHE LAYER"]:::cache
+    EmbedQuery["📐 EMBED QUERY"]:::cache
+    RedisVectorSearch["<img src='https://raw.githubusercontent.com/devicons/devicon/master/icons/redis/redis-original.svg' width='20' height='20'/> REDIS VECTOR SEARCH"]:::redisSearch
+    
+    Decision{"SIMILARITY >= THRESHOLD?"}:::decision
+    
+    TTLCheck["⏱️ TTL EXPIRY CHECK"]:::hitBranch
+    ReturnCached["⚡ RETURN CACHED RESPONSE"]:::hitBranch
+    
+    CallLLM["🤖 CALL LLM"]:::missBranch
+    StoreRedis["<img src='https://raw.githubusercontent.com/devicons/devicon/master/icons/redis/redis-original.svg' width='22' height='22'/> STORE IN REDIS CACHE<br/><code>[0.9, 0.1, 0.2, ...]</code>"]:::redisStore
+
+    %% Main Request Path
+    Client ==>|"Prompt Request"| Router
+    Router --> SemanticCache
+    SemanticCache --> EmbedQuery
+    EmbedQuery --> RedisVectorSearch
+    RedisVectorSearch --> Decision
+
+    %% Cache Hit (YES) Branch
+    Decision -->|"YES"| TTLCheck
+    TTLCheck --> ReturnCached
+    ReturnCached -->|"RESPONSE"| Router
+
+    %% Cache Miss (NO) Branch
+    Decision -->|"NO"| CallLLM
+    CallLLM -->|"GENERATE RESPONSE"| StoreRedis
+    StoreRedis -->|"RESPONSE"| Router
+
+    %% Return Path to Client
+    Router ==>|"RESPONSE"| Client
+
+```
+
 
 ## Project structure
 
