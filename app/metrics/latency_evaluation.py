@@ -90,6 +90,7 @@ def main():
     cached_responses = {}
     print("Cached latencies...")
     for model in MODELS:
+        cache_service.delete()
         res = run_cache(model)
         cached_responses[model] = res
         print(
