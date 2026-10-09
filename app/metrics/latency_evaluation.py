@@ -79,6 +79,7 @@ def main():
     cache_service.delete()
     baseline_responses = {}
     for model in MODELS:
+        cache_service.delete()
         res = run_baseline(model)
         baseline_responses[model] = res
         print(

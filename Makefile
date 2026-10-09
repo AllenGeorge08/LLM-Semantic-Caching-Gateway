@@ -13,3 +13,6 @@ test:
 evaluate:
 	 $(PYTHON) -m app.benchmark_evaluation.benchmark
 	
+
+evaluate_latency:
+	 $(PYTHON) -m app.metrics.latency_evaluation
