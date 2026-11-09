@@ -14,10 +14,10 @@ The result is lower latency, lower cost, and higher throughput, with the similar
 
 | Metric | Value |
 | --- | --- |
-| Median latency, cache hit vs. direct LLM call | `X ms` vs. `Y ms` |
-| Overhead added on a cache miss (embedding + lookup) | `Z ms` |
-| Recommended similarity threshold | `T` |
-| Precision / recall at that threshold | `P%` / `R%` |
+| Median latency(p50), cache hit vs. direct LLM call | `4-5 ms`,`222ms` vs. `2,939 – 7,142 ms` |
+| Overhead added on a cache miss (embedding + lookup) | `100–200 ms` |
+| Recommended similarity threshold | `0.3` |
+| Precision / recall at that threshold | `95.16%` / `73.75%` |
 
 Full methodology and numbers: [`LATENCY_BENCHMARKS.MD`](./LATENCY_BENCHMARKS.MD) and [`THRESHOLD_BENCHMARKS.MD`](./THRESHOLD_BENCHMARKS.MD).
 
